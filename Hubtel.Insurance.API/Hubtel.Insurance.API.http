@@ -1,0 +1,6 @@
+@Hubtel.Insurance.API_HostAddress = http://localhost:5258
+
+GET {{Hubtel.Insurance.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
