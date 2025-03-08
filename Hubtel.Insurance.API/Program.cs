@@ -1,5 +1,6 @@
 using DotNetEnv;
 using Hubtel.Insurance.API.Configurations;
+using Hubtel.Insurance.API.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
 Env.Load();
@@ -11,6 +12,11 @@ builder.Services.AddControllers();
 
 builder.Services.Configure<MongoDBSettings>(builder.Configuration.GetSection("MongoDB"));
 builder.Services.AddSingleton<MongoDBContext>();
+
+builder.Services.AddScoped<DatabaseSeeder>();
+
+builder.Services.AddScoped<IPolicyRepository, PolicyRepository>();
+builder.Services.AddScoped<IPolicyComponentRepository, PolicyComponentRepository>();
 
 
 var mongoConnectionString = Environment.GetEnvironmentVariable("MONGO_CONNECTION_STRING");
@@ -30,6 +36,26 @@ builder.Logging.AddEventSourceLogger();
 
 
 var app = builder.Build();
+
+if (args.Length > 0 && args[0].ToLower() == "seed")
+{
+    using var scope = app.Services.CreateScope();
+    var seeder = scope.ServiceProvider.GetRequiredService<DatabaseSeeder>();
+
+    try
+    {
+        Console.WriteLine("Seeding database...");
+        await seeder.SeedAsync();
+        Console.WriteLine("Database seeding completed.");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"Error seeding database: {ex.Message}");
+    }
+
+    return; // Exit after seeding
+}
+
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
