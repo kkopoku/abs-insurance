@@ -9,5 +9,7 @@ public class Policy {
     public string Id { get; set; }
     public required string PolicyName { get; set; }
     public required int PolicyId { get; set; }
+    [BsonIgnore] // ignore, mongo doesnt save this field
+    public List<PolicyComponent> Components { get; set; } = [];
     
 }
