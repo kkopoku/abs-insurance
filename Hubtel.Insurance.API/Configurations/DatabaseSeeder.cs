@@ -78,7 +78,7 @@ public class DatabaseSeeder
             foreach (var component in policy.Components)
             {
                 var policyComponentRecord = new PolicyComponent {
-                    PolicyId = ObjectId.Parse(policyRecord.Id),
+                    PolicyId = policyRecord.Id,
                     Sequence = component.Sequence,
                     Name = component.Name,
                     Operation = component.Operation,
