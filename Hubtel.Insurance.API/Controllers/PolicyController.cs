@@ -1,17 +1,57 @@
 namespace Hubtel.Insurance.API.Controllers;
 
 using Microsoft.AspNetCore.Mvc;
-
+using Newtonsoft.Json;
+using Hubtel.Insurance.API.Services;
+using Hubtel.Insurance.API.DTOs;
 
 [ApiController]
 [Route("api/v1/[controller]")]
-public class PolicyController() : ControllerBase {
+public class PolicyController(
+    IPolicyService policyService,
+    ILogger<PolicyController> logger
+) : ControllerBase
+{
+
+    private readonly IPolicyService _policyService = policyService;
+    private readonly ILogger<PolicyController> _logger = logger;
 
 
-    [HttpGet]
-    public async Task<IActionResult> Get() {
-        await Task.Delay(500);
-        return Ok(new { message = "Get all policies" });
+
+    [HttpGet("{id}")]
+    public async Task<IActionResult> GetPolicyDetails(int id)
+    {
+        var tag = "[PolicyController][GetPolicyDetails]";
+
+        _logger.LogInformation($"{tag} Request recieved, id: {id}");
+        var response = await _policyService.GetPolicyDetailsAsync(id);
+        var code = int.Parse(response.Code);
+
+        _logger.LogInformation($"{tag} Sending response: {JsonConvert.SerializeObject(response, Formatting.Indented)}");
+        return StatusCode(code, response);
     }
+
+
+
+    [HttpPost("request-quote")]
+    public async Task<IActionResult> RequestQuote([FromBody] RequestQuoteDTO requestQuoteDTO)
+    {
+        var tag = "[PolicyController][RequestQuote]";
+
+        _logger.LogInformation($"{tag} Request recieved: {JsonConvert.SerializeObject(requestQuoteDTO, Formatting.Indented)}");
+
+        if (!ModelState.IsValid){
+            _logger.LogInformation($"{tag} Invalid request body");
+            return StatusCode(400, new ApiResponse<string>("400","Invalid request body"));
+        }
+
+        var response = await _policyService.CalculatePremium(requestQuoteDTO);
+
+        var code = int.Parse(response.Code);
+        _logger.LogInformation($"{tag} Sending response: {JsonConvert.SerializeObject(response, Formatting.Indented)}");
+        return StatusCode(code, response);
+
+    }
+
 
 }

@@ -13,6 +13,7 @@ public class PolicyRepository
 
     private readonly ILogger<PolicyRepository> _logger = logger;
     private readonly IMongoCollection<Policy> _policies = mongoDBContext.Policies;
+    private readonly IMongoCollection<PolicyComponent> _policyComponents = mongoDBContext.PolicyComponents;
 
 
     public async Task<Policy> CreateAsync(Policy policy){
@@ -26,7 +27,11 @@ public class PolicyRepository
 
 
     public async Task<Policy> GetByIdAsync(int id){
-        return await _policies.Find(p => p.PolicyId == id).FirstOrDefaultAsync();
+        var policy = await _policies.Find(p => p.PolicyId == id).FirstOrDefaultAsync();
+        if (policy != null){
+            policy.Components = await _policyComponents.Find(c => c.PolicyId == policy.Id).ToListAsync();
+        }
+        return policy;
     }
 
 }
