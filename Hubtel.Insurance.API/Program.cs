@@ -1,6 +1,7 @@
 using DotNetEnv;
 using Hubtel.Insurance.API.Configurations;
 using Hubtel.Insurance.API.Repositories;
+using Hubtel.Insurance.API.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 Env.Load();
@@ -17,6 +18,8 @@ builder.Services.AddScoped<DatabaseSeeder>();
 
 builder.Services.AddScoped<IPolicyRepository, PolicyRepository>();
 builder.Services.AddScoped<IPolicyComponentRepository, PolicyComponentRepository>();
+
+builder.Services.AddScoped<IPolicyService, PolicyService>();
 
 
 var mongoConnectionString = Environment.GetEnvironmentVariable("MONGO_CONNECTION_STRING");
