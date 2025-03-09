@@ -17,6 +17,20 @@ public class PolicyController(
     private readonly ILogger<PolicyController> _logger = logger;
 
 
+    [HttpGet]
+    public async Task<IActionResult> GetAllPolicies(
+        [FromQuery] int pageNumber = 1,
+        [FromQuery] int pageSize = 10
+    ){
+        var tag = "[PolicyController][GetAllPolicies]";
+        _logger.LogInformation($"{tag} Request recieved");
+        var response = await _policyService.GetAllPolicies(pageNumber, pageSize);
+        var code = int.Parse(response.Code);
+
+        _logger.LogInformation($"{tag} Sending response: {JsonConvert.SerializeObject(response, Formatting.Indented)}");
+        return StatusCode(code, response);
+    }
+
 
     [HttpGet("{id}")]
     public async Task<IActionResult> GetPolicyDetails(int id)
@@ -50,7 +64,25 @@ public class PolicyController(
         var code = int.Parse(response.Code);
         _logger.LogInformation($"{tag} Sending response: {JsonConvert.SerializeObject(response, Formatting.Indented)}");
         return StatusCode(code, response);
+    }
 
+    
+
+    [HttpPost("create")]
+    public async Task<IActionResult> CreatePolicy([FromBody] CreatePolicyDTO createPolicyDTO){
+        var tag = "[PolicyController][CreatePolicy]";
+        _logger.LogInformation($"{tag} Request recieved: {JsonConvert.SerializeObject(createPolicyDTO, Formatting.Indented)}");
+
+
+         if (!ModelState.IsValid){
+            _logger.LogInformation($"{tag} Invalid request body");
+            return StatusCode(400, new ApiResponse<string>("400","Invalid request body"));
+        }
+
+        var response = await _policyService.CreatePolicyAsync(createPolicyDTO);
+        var code = int.Parse(response.Code);
+        _logger.LogInformation($"{tag} Sending response: {JsonConvert.SerializeObject(response, Formatting.Indented)}");
+        return StatusCode(code, response);
     }
 
 
