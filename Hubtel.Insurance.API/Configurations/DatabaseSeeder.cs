@@ -20,7 +20,7 @@ public class DatabaseSeeder
 
     public async Task SeedAsync()
     {
-        var existingPolicies = await _policyRepository.GetAllAsync();
+        var existingPolicies = await _policyRepository.GetAllAsync(1,100);
         if (existingPolicies.Count != 0)
         {
             Console.WriteLine("Database already seeded.");
