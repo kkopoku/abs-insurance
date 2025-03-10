@@ -4,6 +4,6 @@ namespace Hubtel.Insurance.API.DTOs
     {
         public int PageNumber { get; set; }
         public int PageSize { get; set; }
-        public List<T> Data { get; set; }
+        public List<T> Data { get; set; } = null;
     }
 }
