@@ -8,4 +8,5 @@ public interface IPolicyService {
     Task<ApiResponse<Policy>> GetPolicyDetailsAsync(int id);
     Task<ApiResponse<object>> CalculatePremium(RequestQuoteDTO requestQuoteDTO);
     Task<ApiResponse<object>> CreatePolicyAsync(CreatePolicyDTO createPolicyDTO);
+    Task<ApiResponse<Policy>> UpdatePolicyAsync(UpdatePolicyDTO updatePolicyDTO);
 }

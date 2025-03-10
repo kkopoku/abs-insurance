@@ -86,4 +86,19 @@ public class PolicyController(
     }
 
 
+    [HttpPatch("update")]
+    public async Task<IActionResult> UpdatePolicy(
+        [FromBody] UpdatePolicyDTO updateDto)
+    {
+        string tag = "[PolicyController][UpdatePolicy]";
+        _logger.LogInformation($"{tag} Updating policy with ID: {updateDto.PolicyId}. Request: {JsonConvert.SerializeObject(updateDto, Formatting.Indented)}");
+
+        var response = await _policyService.UpdatePolicyAsync(updateDto);
+        var code = int.Parse(response.Code);
+
+        return StatusCode(code, response);
+    }
+
+
+
 }

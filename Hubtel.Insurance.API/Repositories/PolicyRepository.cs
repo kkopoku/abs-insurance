@@ -71,4 +71,24 @@ public class PolicyRepository
         return policy;
     }
 
+
+    public async Task<bool> UpdateAsync(UpdatePolicyDTO updateDto)
+    {
+        var filter = Builders<Policy>.Filter.Eq(p => p.PolicyId, int.Parse(updateDto.PolicyId));
+        var updateDef = new List<UpdateDefinition<Policy>>();
+
+        if (!string.IsNullOrEmpty(updateDto.PolicyName))
+        {
+            updateDef.Add(Builders<Policy>.Update.Set(p => p.PolicyName, updateDto.PolicyName));
+        }
+
+        if (updateDef.Count == 0) return false;
+
+        var update = Builders<Policy>.Update.Combine(updateDef);
+        var result = await _policies.UpdateOneAsync(filter, update);
+
+        return result.ModifiedCount > 0;
+    }
+
+
 }

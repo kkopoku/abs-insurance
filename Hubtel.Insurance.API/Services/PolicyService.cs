@@ -4,6 +4,7 @@ using Hubtel.Insurance.API.Repositories;
 using Hubtel.Insurance.API.DTOs;
 using Hubtel.Insurance.API.Models;
 using Hubtel.Insurance.API.Constants;
+using Newtonsoft.Json;
 
 public class PolicyService(
     IPolicyRepository policyRepository,
@@ -120,7 +121,7 @@ public class PolicyService(
     public async Task<ApiResponse<object>> CreatePolicyAsync(CreatePolicyDTO policyDTO)
     {
         string tag = "[PolicyService][CreatePolicyAsync]";
-        _logger.LogInformation($"{tag} Start processing request for Policy ID: {policyDTO.PolicyId}");
+        _logger.LogInformation($"{tag} Started processing request for Policy ID: {policyDTO.PolicyId}");
 
         // Validate component sequences
         _logger.LogInformation($"{tag} Validating policy components...");
@@ -207,6 +208,65 @@ public class PolicyService(
         return new ApiResponse<object>("200", "Policy successfully created", createdPolicy);
     }
 
+
+    public async Task<ApiResponse<Policy>> UpdatePolicyAsync(UpdatePolicyDTO updateDto)
+    {
+        const string tag = "[PolicyService][UpdatePolicyAsync]";
+        try{
+            _logger.LogInformation($"{tag} Start processing request for Policy ID: {updateDto.PolicyId}");
+
+            // Find policy
+            var foundPolicy = await _policyRepository.GetByIdAsync(int.Parse(updateDto.PolicyId));
+            _logger.LogInformation($"{tag} Found policy: {JsonConvert.SerializeObject(foundPolicy, Formatting.Indented)}");
+
+            if (foundPolicy == null)
+            {
+                _logger.LogInformation($"{tag} Policy with ID: {updateDto.PolicyId} doesn't exist");
+                return new ApiResponse<Policy>("404", "Policy not found");
+            }
+
+            bool policyUpdated = false;
+
+            // Check if PolicyName is in request and update
+            if (!string.IsNullOrEmpty(updateDto.PolicyName))
+            {
+                _logger.LogInformation($"{tag} Updating policy name from {foundPolicy.PolicyName} to {updateDto.PolicyName}");
+                policyUpdated = await _policyRepository.UpdateAsync(updateDto);
+            }
+
+            bool componentsUpdated = false;
+
+            // Update components if passed in request
+            if (updateDto.Components != null && updateDto.Components.Count > 0)
+            {
+                foreach (var component in updateDto.Components)
+                {
+                    _logger.LogInformation($"{tag} Updating component Sequence: {component.Sequence}");
+                    component.PolicyId = foundPolicy.Id;
+                    var updated = await _policyComponentRepository.UpdatePolicyComponentAsync(component);
+                    if (updated){
+                        componentsUpdated = true;
+                    }
+                }
+            }
+
+            if (!policyUpdated && !componentsUpdated)
+            {
+                _logger.LogInformation($"{tag} No updates were made");
+                return new ApiResponse<Policy>("400", "No valid fields to update");
+            }
+
+            var updatedPolicy = await _policyRepository.GetByIdAsync(int.Parse(updateDto.PolicyId));
+
+            _logger.LogInformation($"{tag} Policy update completed successfully");
+            return new ApiResponse<Policy>("200", "Policy updated successfully", updatedPolicy);
+        }
+        catch (Exception e){
+            _logger.LogError($"{tag} An Error occurred. Error {e.Message}");
+            return new ApiResponse<Policy>("500", "Something went wrong, please try again");
+        }
+
+    }
 
 
 }
