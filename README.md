@@ -116,5 +116,5 @@ dotnet test
 The API will be running on `http://localhost:5150` by default or the port you have specified. You can access the API using Postman or any other HTTP client.
 
 ## API Documentation
-The API documentation can be found [here](#).
+The API documentation can be found [here](https://documenter.getpostman.com/view/23488284/2sAYdoGTev).
 
