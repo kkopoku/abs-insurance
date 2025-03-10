@@ -12,5 +12,6 @@ public interface IPolicyRepository {
     Task<Policy?> GetByIdAsync(int id);
     Task<List<GetPoliciesDTO>> GetAllAsync(int pageNumber, int pageSize);
     Task<bool> UpdateAsync (UpdatePolicyDTO updatePolicyDTO);
+    Task<bool> DeletePolicyByPolicyIdAsync (string id);
     
 }

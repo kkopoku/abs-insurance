@@ -70,5 +70,38 @@ public class PolicyComponentRepository(
     }
 
 
+    // public async Task<bool> DeletePolicyComponentByPolicyIdAsync(string policyId){
+    //     const string tag = "[PolicyComponentRepository][DeletePolicyComponentByPolicyIdAsync]";
+    //     _logger.LogInformation($"{tag} Start deleting policy component with Policy ID: {policyId}");
+
+    //     var filter = Builders<PolicyComponent>.Filter.Eq(c => c.PolicyId, policyId);
+    //     var result = await _policyComponents.DeleteOneAsync(filter);
+
+    //     if (result.DeletedCount > 0)
+    //     {
+    //         _logger.LogInformation($"{tag} Successfully deleted policy component with ID: {policyId}");
+    //         return true;
+    //     }
+
+    //     _logger.LogWarning($"{tag} No policy component found with ID: {policyId}");
+    //     return false;
+    // }
+
+
+    public async Task<long> DeletePolicyComponentsByPolicyIdAsync(string policyId){
+        const string tag = "[PolicyComponentRepository][DeletePolicyComponentsByPolicyIdAsync]";
+        _logger.LogInformation($"{tag} Start deleting policy components with Policy ID: {policyId}");
+
+        var filter = Builders<PolicyComponent>.Filter.Eq(c => c.PolicyId, policyId);
+        var result = await _policyComponents.DeleteManyAsync(filter);
+
+        if (result.DeletedCount > 0){
+            _logger.LogInformation($"{tag} Successfully deleted {result.DeletedCount} policy components with Policy ID: {policyId}");
+            return result.DeletedCount;
+        }
+
+        _logger.LogWarning($"{tag} No policy components found with Policy ID: {policyId}");
+        return 0;
+    }
 
 }

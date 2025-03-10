@@ -9,4 +9,5 @@ public interface IPolicyService {
     Task<ApiResponse<object>> CalculatePremium(RequestQuoteDTO requestQuoteDTO);
     Task<ApiResponse<object>> CreatePolicyAsync(CreatePolicyDTO createPolicyDTO);
     Task<ApiResponse<Policy>> UpdatePolicyAsync(UpdatePolicyDTO updatePolicyDTO);
+    Task<ApiResponse<string>> DeletePolicyByPolicyId(string policyId);
 }

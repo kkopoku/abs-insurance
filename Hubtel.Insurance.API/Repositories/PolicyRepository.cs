@@ -91,4 +91,24 @@ public class PolicyRepository
     }
 
 
+    public async Task<bool> DeletePolicyByPolicyIdAsync(string id)
+    {
+        const string tag = "[PolicyRepository][DeletePolicyByPolicyIdAsync]";
+        _logger.LogInformation($"{tag} Start deleting policy with PolicyId: {id}");
+
+        var filter = Builders<Policy>.Filter.Eq(p => p.PolicyId, int.Parse(id));
+        var result = await _policies.DeleteOneAsync(filter);
+
+        if (result.DeletedCount > 0)
+        {
+            _logger.LogInformation($"{tag} Successfully deleted policy with PolicyId: {id}");
+            return true;
+        }
+
+        _logger.LogWarning($"{tag} No policy found with PolicyId: {id}");
+        return false;
+    }
+
+
+
 }

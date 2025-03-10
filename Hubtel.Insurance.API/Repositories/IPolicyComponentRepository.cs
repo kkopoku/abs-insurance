@@ -9,5 +9,6 @@ public interface IPolicyComponentRepository {
     Task<PolicyComponent> CreateAsync(PolicyComponent policyComponent);
     Task<List<PolicyComponent>> GetAllAsync();
     Task<bool> UpdatePolicyComponentAsync(UpdatePolicyComponentDTO component);
+    Task<long> DeletePolicyComponentsByPolicyIdAsync(string id);
 
 }

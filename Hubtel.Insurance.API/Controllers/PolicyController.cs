@@ -100,5 +100,16 @@ public class PolicyController(
     }
 
 
+    [HttpDelete("delete/{policyId}")]
+    public async Task<IActionResult> DeletePolicy(int policyId){
+        const string tag = "[PolicyController][DeletePolicy]";
+        _logger.LogInformation($"{tag} Request received, with ID: {policyId}");
+
+        var response = await _policyService.DeletePolicyByPolicyId(policyId.ToString());
+        var code = int.Parse(response.Code);
+
+        return StatusCode(code, response);
+    }
+
 
 }

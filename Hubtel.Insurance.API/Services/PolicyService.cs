@@ -212,7 +212,8 @@ public class PolicyService(
     public async Task<ApiResponse<Policy>> UpdatePolicyAsync(UpdatePolicyDTO updateDto)
     {
         const string tag = "[PolicyService][UpdatePolicyAsync]";
-        try{
+        try
+        {
             _logger.LogInformation($"{tag} Start processing request for Policy ID: {updateDto.PolicyId}");
 
             // Find policy
@@ -244,7 +245,8 @@ public class PolicyService(
                     _logger.LogInformation($"{tag} Updating component Sequence: {component.Sequence}");
                     component.PolicyId = foundPolicy.Id;
                     var updated = await _policyComponentRepository.UpdatePolicyComponentAsync(component);
-                    if (updated){
+                    if (updated)
+                    {
                         componentsUpdated = true;
                     }
                 }
@@ -261,11 +263,49 @@ public class PolicyService(
             _logger.LogInformation($"{tag} Policy update completed successfully");
             return new ApiResponse<Policy>("200", "Policy updated successfully", updatedPolicy);
         }
-        catch (Exception e){
+        catch (Exception e)
+        {
             _logger.LogError($"{tag} An Error occurred. Error {e.Message}");
             return new ApiResponse<Policy>("500", "Something went wrong, please try again");
         }
 
+    }
+
+
+    public async Task<ApiResponse<string>> DeletePolicyByPolicyId(string policyId)
+    {
+        const string tag = "[PolicyService][DeletePolicyByPolicyId]";
+        _logger.LogInformation($"{tag} Start deleting policy with PolicyId: {policyId}");
+
+        try
+        {
+            // Check if the policy exists
+            var policy = await _policyRepository.GetByIdAsync(int.Parse(policyId));
+            if (policy == null){
+                _logger.LogWarning($"{tag} No policy found with PolicyId: {policyId}");
+                return new ApiResponse<string>("404", "Policy not found");
+            }
+
+            // Delete all related policy components
+            var deletedComponents = await _policyComponentRepository.DeletePolicyComponentsByPolicyIdAsync(policy.Id);
+            _logger.LogInformation($"{tag} Deleted {deletedComponents} components associated with PolicyId: {policyId}");
+
+            // Delete the policy itself
+            var isDeleted = await _policyRepository.DeletePolicyByPolicyIdAsync(policyId);
+            if (!isDeleted)
+            {
+                _logger.LogError($"{tag} Failed to delete policy with PolicyId: {policyId}");
+                return new ApiResponse<string>("500", "Failed to delete policy, please try again");
+            }
+
+            _logger.LogInformation($"{tag} Successfully deleted policy with PolicyId: {policyId}");
+            return new ApiResponse<string>("200", "Policy deleted successfully");
+        }
+        catch (Exception e)
+        {
+            _logger.LogError($"{tag} An Error occurred. Error: {e.Message}");
+            return new ApiResponse<string>("500", "Something went wrong, please try again");
+        }
     }
 
 
