@@ -2,9 +2,21 @@ using DotNetEnv;
 using Hubtel.Insurance.API.Configurations;
 using Hubtel.Insurance.API.Repositories;
 using Hubtel.Insurance.API.Services;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Versioning;
 
 var builder = WebApplication.CreateBuilder(args);
 Env.Load();
+
+// Add API versioning service
+builder.Services.AddApiVersioning(options =>
+{
+    options.ReportApiVersions = true; // Adds API versions to the response headers
+    options.AssumeDefaultVersionWhenUnspecified = true;
+    options.DefaultApiVersion = new ApiVersion(1, 0); // Default API version (1.0)
+    options.ApiVersionReader = new UrlSegmentApiVersionReader(); // Versioning via URL
+});
+
 
 // Add services to the container.
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
