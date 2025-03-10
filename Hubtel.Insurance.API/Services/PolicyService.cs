@@ -23,16 +23,24 @@ public class PolicyService(
         const string tag = "[PolicyService][GetAllPolicies]";
         _logger.LogInformation($"{tag} Fetching policies - pageNumber: {pageNumber}, pageSize: {pageSize}");
 
-        var policies = await _policyRepository.GetAllAsync(pageNumber, pageSize);
-
-        var paginatedResponse = new PaginatedResponse<GetPoliciesDTO>
+        try
         {
-            PageNumber = pageNumber,
-            PageSize = pageSize,
-            Data = policies
-        };
+            var policies = await _policyRepository.GetAllAsync(pageNumber, pageSize);
+            var paginatedResponse = new PaginatedResponse<GetPoliciesDTO>
+            {
+                PageNumber = pageNumber,
+                PageSize = pageSize,
+                Data = policies
+            };
 
-        return new ApiResponse<PaginatedResponse<GetPoliciesDTO>>("200", "Policies fetched successfully", paginatedResponse);
+            return new ApiResponse<PaginatedResponse<GetPoliciesDTO>>("200", "Policies fetched successfully", paginatedResponse);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError($"{tag} Error fetching policies. Error: {e.Message}");
+            return new ApiResponse<PaginatedResponse<GetPoliciesDTO>>("500", "An error occurred while creating the policy. Please try again later.");
+
+        }
     }
 
 
@@ -40,18 +48,26 @@ public class PolicyService(
     {
         var tag = "[PolicyService][GetPolicyDetailsAsync]";
 
-        _logger.LogInformation($"{tag} Searching for policy with id: {id}");
-        var foundPolicy = await _policyRepository.GetByIdAsync(id);
-        if (foundPolicy == null)
+        try
         {
-            _logger.LogInformation($"{tag} Policy with id: {id} not found, returning not found response");
-            var notFoundMessage = "Policy not found";
-            var response = new ApiResponse<Policy>("404", notFoundMessage);
-            return response;
+            _logger.LogInformation($"{tag} Searching for policy with id: {id}");
+            var foundPolicy = await _policyRepository.GetByIdAsync(id);
+            if (foundPolicy == null)
+            {
+                _logger.LogInformation($"{tag} Policy with id: {id} not found, returning not found response");
+                var notFoundMessage = "Policy not found";
+                var response = new ApiResponse<Policy>("404", notFoundMessage);
+                return response;
+            }
+            _logger.LogInformation($"{tag} Policy with id: {id} found, returning success response");
+            var successMessage = "Policy fetched successfully";
+            return new ApiResponse<Policy>("200", successMessage, foundPolicy);
         }
-        _logger.LogInformation($"{tag} Policy with id: {id} found, returning success response");
-        var successMessage = "Policy fetched successfully";
-        return new ApiResponse<Policy>("200", successMessage, foundPolicy);
+        catch (Exception e)
+        {
+            _logger.LogError($"{tag} Error fetching policy details. Error: {e.Message}");
+            return new ApiResponse<Policy>("500", "An error occurred while fetching policy details. Please try again later.");
+        }
     }
 
 
@@ -60,61 +76,64 @@ public class PolicyService(
         var tag = "[PolicyService][CalculatePremium]";
         _logger.LogInformation($"{tag} Calculating premium ...");
 
-        //  Find the policy
-        var policyId = requestQuoteDTO.PolicyId;
-
-        var foundPolicy = await _policyRepository.GetByIdAsync(policyId);
-
-        if (foundPolicy == null)
+        try
         {
-            _logger.LogInformation($"{tag} Policy not found");
-            var notFoundMessage = "Policy not found, cannot request quote";
-            return new ApiResponse<object>("404", notFoundMessage);
-        }
+            // Find the policy
+            var policyId = requestQuoteDTO.PolicyId;
+            var foundPolicy = await _policyRepository.GetByIdAsync(policyId);
 
-        // Check if all 4 components are present
-        var componentCount = foundPolicy.Components.Count;
-        if (componentCount != 4)
-        {
-            _logger.LogInformation($"{tag} Policy components count is invalid. Count == {componentCount}");
-            var errorMessage = "Cannot calculate quote for this policy";
-            return new ApiResponse<object>("404", errorMessage);
-        }
-
-        double totalPremium = 0;
-        foreach (var component in foundPolicy.Components.OrderBy(c => c.Sequence))
-        {
-
-            // check if component has both decimal and percentage
-            if (component.FlatValue != 0 && component.Percentage != 0)
+            if (foundPolicy == null)
             {
-                _logger.LogInformation($"{tag} Cannot have both flat value and percentage present. flatValue = {component.FlatValue} , percentage = {component.Percentage}");
-                var errorMessage = "Something went wrong, please contact support";
-                return new ApiResponse<object>("400", errorMessage);
+                _logger.LogInformation($"{tag} Policy not found");
+                return new ApiResponse<object>("404", "Policy not found, cannot request quote");
             }
 
-            double componentValue = component.FlatValue + (requestQuoteDTO.MarketValue * component.Percentage / 100);
-            if (component.Operation.ToLower() == "add")
+            // Check if all 4 components are present
+            var componentCount = foundPolicy.Components.Count;
+            if (componentCount != 4)
             {
-                totalPremium += componentValue;
-            }
-            else if (component.Operation.ToLower() == "subtract")
-            {
-                totalPremium -= componentValue;
+                _logger.LogInformation($"{tag} Policy components count is invalid. Count == {componentCount}");
+                return new ApiResponse<object>("404", "Cannot calculate quote for this policy");
             }
 
+            double totalPremium = 0;
+            foreach (var component in foundPolicy.Components.OrderBy(c => c.Sequence))
+            {
+                // Check if component has both flat value and percentage
+                if (component.FlatValue != 0 && component.Percentage != 0)
+                {
+                    _logger.LogInformation($"{tag} Cannot have both flat value and percentage present. flatValue = {component.FlatValue} , percentage = {component.Percentage}");
+                    return new ApiResponse<object>("400", "Something went wrong, please contact support");
+                }
+
+                double componentValue = component.FlatValue + (requestQuoteDTO.MarketValue * component.Percentage / 100);
+                if (component.Operation.ToLower() == "add")
+                {
+                    totalPremium += componentValue;
+                }
+                else if (component.Operation.ToLower() == "subtract")
+                {
+                    totalPremium -= componentValue;
+                }
+            }
+
+            _logger.LogInformation($"{tag} Quote calculated successfully. Premium to be paid: {totalPremium}");
+            var response = new
+            {
+                policyId = foundPolicy.Id,
+                policy = foundPolicy.PolicyName,
+                premium = totalPremium
+            };
+
+            return new ApiResponse<object>("200", "Quote retrieved successfully", response);
         }
-
-        _logger.LogInformation($"{tag} Quote calculated successfully. Premium to be paid: {totalPremium}");
-        var response = new
+        catch (Exception ex)
         {
-            policyId = foundPolicy.Id,
-            policy = foundPolicy.PolicyName,
-            premium = totalPremium
-        };
-
-        return new ApiResponse<object>("200", "Quote retrieved successfully", response);
+            _logger.LogError($"{tag} An error occurred while calculating premium: {ex.Message}", ex);
+            return new ApiResponse<object>("500", "An unexpected error occurred while calculating the premium");
+        }
     }
+
 
 
 
@@ -123,90 +142,98 @@ public class PolicyService(
         string tag = "[PolicyService][CreatePolicyAsync]";
         _logger.LogInformation($"{tag} Started processing request for Policy ID: {policyDTO.PolicyId}");
 
-        // Validate component sequences
-        _logger.LogInformation($"{tag} Validating policy components...");
-        var components = policyDTO.Components;
-        for (var i = 0; i < components.Count; i++)
+        try
         {
-            var expectedCount = i + 1;
-            var current = components[i];
-            if (expectedCount != current.Sequence)
+            // Validate component sequences
+            _logger.LogInformation($"{tag} Validating policy components...");
+            var components = policyDTO.Components;
+            for (var i = 0; i < components.Count; i++)
             {
-                _logger.LogWarning($"{tag} Invalid component sequence detected at index {i}. Expected: {expectedCount}, Found: {current.Sequence}");
-                return new ApiResponse<object>("400", $"Invalid policy components, missing component with sequence {expectedCount}");
+                var expectedCount = i + 1;
+                var current = components[i];
+                if (expectedCount != current.Sequence)
+                {
+                    _logger.LogWarning($"{tag} Invalid component sequence detected at index {i}. Expected: {expectedCount}, Found: {current.Sequence}");
+                    return new ApiResponse<object>("400", $"Invalid policy components, missing component with sequence {expectedCount}");
+                }
+                else if ((current.PercentageValue ?? 0) != 0 && (current.FlatValue ?? 0) != 0)
+                {
+                    _logger.LogWarning($"{tag} FlatValue and Percentage present abort ... flatValue: {current.FlatValue} percentage: {current.PercentageValue}");
+                    return new ApiResponse<object>("400", "Invalid policy components. Cannot have both percentage and flatValue in a component");
+                }
             }
-            else if ((current.PercentageValue ?? 0) != 0 && (current.FlatValue ?? 0) != 0)
+            _logger.LogInformation($"{tag} Policy components validated successfully");
+
+            // Check if policy ID already exists
+            _logger.LogInformation($"{tag} Checking if Policy ID {policyDTO.PolicyId} already exists...");
+            var check = await _policyRepository.GetByIdAsync(policyDTO.PolicyId);
+            if (check != null)
             {
-                _logger.LogWarning($"{tag} FlatValue and Percentage present abort ... flatValue: {current.FlatValue} percentage: {current.PercentageValue}");
-                return new ApiResponse<object>("400", "Invalid policy components. Cannot have both percentage and flatValue in a component");
-            }
-
-        }
-        _logger.LogInformation($"{tag} Policy components validated successfully");
-
-        // Check if policy ID already exists
-        _logger.LogInformation($"{tag} Checking if Policy ID {policyDTO.PolicyId} already exists...");
-        var check = await _policyRepository.GetByIdAsync(policyDTO.PolicyId);
-        if (check != null)
-        {
-            _logger.LogWarning($"{tag} Policy ID {policyDTO.PolicyId} already exists.");
-            return new ApiResponse<object>("400", "Policy with this ID already exists");
-        }
-
-        // Save policy in database
-        _logger.LogInformation($"{tag} Creating new policy with ID: {policyDTO.PolicyId}");
-        Policy toCreate = new()
-        {
-            PolicyId = policyDTO.PolicyId,
-            PolicyName = policyDTO.Policy
-        };
-
-        var createdPolicy = await _policyRepository.CreateAsync(toCreate);
-        if (createdPolicy == null)
-        {
-            _logger.LogError($"{tag} Failed to create policy for ID {policyDTO.PolicyId}");
-            return new ApiResponse<object>("400", "Policy could not be created");
-        }
-        _logger.LogInformation($"{tag} Policy created successfully with ID {createdPolicy.Id}");
-
-        // Create policy components
-        _logger.LogInformation($"{tag} Creating components for Policy ID {createdPolicy.Id}...");
-        List<PolicyComponent> createdComponents = new();
-
-        foreach (var component in components)
-        {
-            if (!ComponentConstants.ComponentDefinitions.TryGetValue(component.Sequence, out var componentInfo))
-            {
-                _logger.LogWarning($"{tag} Invalid sequence number {component.Sequence} in policy ID {createdPolicy.Id}");
-                return new ApiResponse<object>("400", $"Invalid sequence number: {component.Sequence}");
+                _logger.LogWarning($"{tag} Policy ID {policyDTO.PolicyId} already exists.");
+                return new ApiResponse<object>("400", "Policy with this ID already exists");
             }
 
-            var componentToCreate = new PolicyComponent
+            // Save policy in database
+            _logger.LogInformation($"{tag} Creating new policy with ID: {policyDTO.PolicyId}");
+            Policy toCreate = new()
             {
-                PolicyId = createdPolicy.Id,
-                Sequence = component.Sequence,
-                Name = componentInfo[0], // Name from dictionary
-                Operation = componentInfo[1], // Operation from dictionary
-                FlatValue = component.FlatValue ?? 0,
-                Percentage = component.PercentageValue ?? 0
+                PolicyId = policyDTO.PolicyId,
+                PolicyName = policyDTO.Policy
             };
 
-            var createdComponent = await _policyComponentRepository.CreateAsync(componentToCreate);
-            if (createdComponent == null)
+            var createdPolicy = await _policyRepository.CreateAsync(toCreate);
+            if (createdPolicy == null)
             {
-                _logger.LogError($"{tag} Failed to create component with sequence {component.Sequence} for Policy ID {createdPolicy.Id}");
-                return new ApiResponse<object>("400", $"Failed to create component with sequence {component.Sequence}");
+                _logger.LogError($"{tag} Failed to create policy for ID {policyDTO.PolicyId}");
+                return new ApiResponse<object>("400", "Policy could not be created");
+            }
+            _logger.LogInformation($"{tag} Policy created successfully with ID {createdPolicy.Id}");
+
+            // Create policy components
+            _logger.LogInformation($"{tag} Creating components for Policy ID {createdPolicy.Id}...");
+            List<PolicyComponent> createdComponents = new();
+
+            foreach (var component in components)
+            {
+                if (!ComponentConstants.ComponentDefinitions.TryGetValue(component.Sequence, out var componentInfo))
+                {
+                    _logger.LogWarning($"{tag} Invalid sequence number {component.Sequence} in policy ID {createdPolicy.Id}");
+                    return new ApiResponse<object>("400", $"Invalid sequence number: {component.Sequence}");
+                }
+
+                var componentToCreate = new PolicyComponent
+                {
+                    PolicyId = createdPolicy.Id,
+                    Sequence = component.Sequence,
+                    Name = componentInfo[0], // Name from dictionary
+                    Operation = componentInfo[1], // Operation from dictionary
+                    FlatValue = component.FlatValue ?? 0,
+                    Percentage = component.PercentageValue ?? 0
+                };
+
+                var createdComponent = await _policyComponentRepository.CreateAsync(componentToCreate);
+                if (createdComponent == null)
+                {
+                    _logger.LogError($"{tag} Failed to create component with sequence {component.Sequence} for Policy ID {createdPolicy.Id}");
+                    return new ApiResponse<object>("400", $"Failed to create component with sequence {component.Sequence}");
+                }
+
+                _logger.LogInformation($"{tag} Created component '{componentToCreate.Name}' with sequence {component.Sequence} for Policy ID {createdPolicy.Id}");
+                createdComponents.Add(createdComponent);
             }
 
-            _logger.LogInformation($"{tag} Created component '{componentToCreate.Name}' with sequence {component.Sequence} for Policy ID {createdPolicy.Id}");
-            createdComponents.Add(createdComponent);
+            createdPolicy.Components = createdComponents;
+            _logger.LogInformation($"{tag} Policy creation completed successfully for Policy ID {createdPolicy.Id}");
+
+            return new ApiResponse<object>("200", "Policy successfully created", createdPolicy);
         }
-
-        createdPolicy.Components = createdComponents;
-        _logger.LogInformation($"{tag} Policy creation completed successfully for Policy ID {createdPolicy.Id}");
-
-        return new ApiResponse<object>("200", "Policy successfully created", createdPolicy);
+        catch (Exception ex)
+        {
+            _logger.LogError($"{tag} An unexpected error occurred while creating policy: {ex.Message}");
+            return new ApiResponse<object>("500", "An error occurred while creating the policy. Please try again later.");
+        }
     }
+
 
 
     public async Task<ApiResponse<Policy>> UpdatePolicyAsync(UpdatePolicyDTO updateDto)
@@ -281,7 +308,8 @@ public class PolicyService(
         {
             // Check if the policy exists
             var policy = await _policyRepository.GetByIdAsync(int.Parse(policyId));
-            if (policy == null){
+            if (policy == null)
+            {
                 _logger.LogWarning($"{tag} No policy found with PolicyId: {policyId}");
                 return new ApiResponse<string>("404", "Policy not found");
             }
