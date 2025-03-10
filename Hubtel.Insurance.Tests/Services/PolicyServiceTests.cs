@@ -9,6 +9,7 @@ using Hubtel.Insurance.API.Repositories;
 using Hubtel.Insurance.API.DTOs;
 using Hubtel.Insurance.API.Models;
 using FluentAssertions;
+using System.Text.Json;
 
 public class PolicyServiceBasicTests
 {
@@ -66,8 +67,8 @@ public class PolicyServiceBasicTests
         result.Message.Should().Be("Quote retrieved successfully");
 
         var expectedPremium = 100 + 5000 + 50 - 2000; // = 3150
-        // var actualPremium = ((dynamic)result.Data).Premium; 
-        var actualPremium = 3150; 
+
+        var actualPremium = (result.Data).Premium;
         actualPremium.Should().Be(expectedPremium);
     }
 }

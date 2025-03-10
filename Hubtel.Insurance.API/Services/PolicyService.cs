@@ -71,7 +71,7 @@ public class PolicyService(
     }
 
 
-    public async Task<ApiResponse<object>> CalculatePremium(RequestQuoteDTO requestQuoteDTO)
+    public async Task<ApiResponse<CalculatePremiumDTO>> CalculatePremium(RequestQuoteDTO requestQuoteDTO)
     {
         var tag = "[PolicyService][CalculatePremium]";
         _logger.LogInformation($"{tag} Calculating premium ...");
@@ -85,7 +85,7 @@ public class PolicyService(
             if (foundPolicy == null)
             {
                 _logger.LogInformation($"{tag} Policy not found");
-                return new ApiResponse<object>("404", "Policy not found, cannot request quote");
+                return new ApiResponse<CalculatePremiumDTO>("404", "Policy not found, cannot request quote");
             }
 
             // Check if all 4 components are present
@@ -93,7 +93,7 @@ public class PolicyService(
             if (componentCount != 4)
             {
                 _logger.LogInformation($"{tag} Policy components count is invalid. Count == {componentCount}");
-                return new ApiResponse<object>("404", "Cannot calculate quote for this policy");
+                return new ApiResponse<CalculatePremiumDTO>("404", "Cannot calculate quote for this policy");
             }
 
             double totalPremium = 0;
@@ -103,7 +103,7 @@ public class PolicyService(
                 if (component.FlatValue != 0 && component.Percentage != 0)
                 {
                     _logger.LogInformation($"{tag} Cannot have both flat value and percentage present. flatValue = {component.FlatValue} , percentage = {component.Percentage}");
-                    return new ApiResponse<object>("400", "Something went wrong, please contact support");
+                    return new ApiResponse<CalculatePremiumDTO>("400", "Something went wrong, please contact support");
                 }
 
                 double componentValue = component.FlatValue + (requestQuoteDTO.MarketValue * component.Percentage / 100);
@@ -118,19 +118,19 @@ public class PolicyService(
             }
 
             _logger.LogInformation($"{tag} Quote calculated successfully. Premium to be paid: {totalPremium}");
-            var response = new
+            CalculatePremiumDTO response = new()
             {
-                policyId = foundPolicy.Id,
-                policy = foundPolicy.PolicyName,
-                premium = totalPremium
+                PolicyId = foundPolicy.Id,
+                Policy = foundPolicy.PolicyName,
+                Premium = totalPremium
             };
 
-            return new ApiResponse<object>("200", "Quote retrieved successfully", response);
+            return new ApiResponse<CalculatePremiumDTO>("200", "Quote retrieved successfully", response);
         }
         catch (Exception ex)
         {
             _logger.LogError($"{tag} An error occurred while calculating premium: {ex.Message}", ex);
-            return new ApiResponse<object>("500", "An unexpected error occurred while calculating the premium");
+            return new ApiResponse<CalculatePremiumDTO>("500", "An unexpected error occurred while calculating the premium");
         }
     }
 
