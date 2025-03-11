@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
 using Hubtel.Insurance.API.Services;
 using Hubtel.Insurance.API.DTOs;
+using Microsoft.AspNetCore.Authorization;
 
 [ApiController]
 [Route("api/v{version:apiVersion}/[controller]")]
@@ -18,6 +19,7 @@ public class PolicyController(
     private readonly ILogger<PolicyController> _logger = logger;
 
 
+    [Authorize]
     [HttpGet]
     public async Task<IActionResult> GetAllPolicies(
         [FromQuery] int pageNumber = 1,
