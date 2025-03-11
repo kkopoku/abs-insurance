@@ -4,44 +4,71 @@ using Hubtel.Insurance.API.Repositories;
 using Hubtel.Insurance.API.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Versioning;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 Env.Load();
 
-// Add API versioning service
+// Load environment variables
+var mongoConnectionString = Environment.GetEnvironmentVariable("MONGO_CONNECTION_STRING") 
+    ?? throw new Exception("MONGO_CONNECTION_STRING not set.");
+var mongoDatabaseName = Environment.GetEnvironmentVariable("MONGO_DATABASE_NAME") 
+    ?? throw new Exception("MONGO_DATABASE_NAME not set.");
+var jwtSecret = Environment.GetEnvironmentVariable("JWT_SECRET") 
+    ?? throw new Exception("JWT_SECRET not set.");
+var jwtIssuer = Environment.GetEnvironmentVariable("JWT_ISSUER") 
+    ?? throw new Exception("JWT_ISSUER not set.");
+var jwtAudience = Environment.GetEnvironmentVariable("JWT_AUDIENCE") 
+    ?? throw new Exception("JWT_AUDIENCE not set.");
+
+// Set configuration values
+builder.Configuration["MongoDB:ConnectionString"] = mongoConnectionString;
+builder.Configuration["MongoDB:DatabaseName"] = mongoDatabaseName;
+builder.Configuration["Jwt:Secret"] = jwtSecret;
+builder.Configuration["Jwt:Issuer"] = jwtIssuer;
+builder.Configuration["Jwt:Audience"] = jwtAudience;
+
+// API versioning
 builder.Services.AddApiVersioning(options =>
 {
-    options.ReportApiVersions = true; // Adds API versions to the response headers
+    options.ReportApiVersions = true;
     options.AssumeDefaultVersionWhenUnspecified = true;
-    options.DefaultApiVersion = new ApiVersion(1, 0); // Default API version (1.0)
-    options.ApiVersionReader = new UrlSegmentApiVersionReader(); // Versioning via URL
+    options.DefaultApiVersion = new ApiVersion(1, 0);
+    options.ApiVersionReader = new UrlSegmentApiVersionReader();
 });
 
-
-// Add services to the container.
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
+// Add services
 builder.Services.AddOpenApi();
 builder.Services.AddControllers();
-
 builder.Services.Configure<MongoDBSettings>(builder.Configuration.GetSection("MongoDB"));
 builder.Services.AddSingleton<MongoDBContext>();
-
 builder.Services.AddScoped<DatabaseSeeder>();
-
 builder.Services.AddScoped<IPolicyRepository, PolicyRepository>();
 builder.Services.AddScoped<IPolicyComponentRepository, PolicyComponentRepository>();
-
+builder.Services.AddScoped<ISubscriberRepository, SubscriberRepository>();
 builder.Services.AddScoped<IPolicyService, PolicyService>();
+builder.Services.AddScoped<IAuthService, AuthService>();
 
+// Register JWT authentication
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret)),
+            ValidateIssuer = true,
+            ValidIssuer = jwtIssuer,
+            ValidateAudience = true,
+            ValidAudience = jwtAudience,
+            ValidateLifetime = true,
+            ClockSkew = TimeSpan.Zero // Optional: removes default 5-minute token expiry leeway
+        };
+    });
 
-var mongoConnectionString = Environment.GetEnvironmentVariable("MONGO_CONNECTION_STRING");
-var mongoDatabaseName = Environment.GetEnvironmentVariable("MONGO_DATABASE_NAME");
-
-builder.Configuration["MongoDB:ConnectionString"] =
-    mongoConnectionString ?? throw new Exception("MONGO_CONNECTION_STRING not set.");
-builder.Configuration["MongoDB:DatabaseName"] =
-    mongoDatabaseName ?? throw new Exception("MONGO_DATABASE_NAME not set.");
-
+builder.Services.AddAuthorization();
 
 // Configure logging
 builder.Logging.ClearProviders();
@@ -49,9 +76,9 @@ builder.Logging.AddConsole();
 builder.Logging.AddDebug();
 builder.Logging.AddEventSourceLogger();
 
-
 var app = builder.Build();
 
+// Handle database seeding
 if (args.Length > 0 && args[0].ToLower() == "seed")
 {
     using var scope = app.Services.CreateScope();
@@ -71,18 +98,32 @@ if (args.Length > 0 && args[0].ToLower() == "seed")
     return; // Exit after seeding
 }
 
-
-// Configure the HTTP request pipeline.
+// Configure middleware
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
 }
 
+
+// Handle 401 unauthorized requests by returning custom error message
+app.Use(async (context, next) =>
+{
+    Console.WriteLine(" Middleware is called");
+    await next();
+
+    if (context.Response.StatusCode == StatusCodes.Status401Unauthorized)
+    {
+        context.Response.ContentType = "application/json";
+        await context.Response.WriteAsync("{\"code\":\"401\",\"message\":\"Unauthorized access\"}");
+    }
+});
+
 app.UseHttpsRedirection();
-app.MapControllers(); // Maps controller routes based on attribute routing in controllers
+app.UseAuthentication();
+app.UseAuthorization();
+app.MapControllers();
 
-
-// create temp scope to test Database Connection
+// Test database connection
 using (var scope = app.Services.CreateScope())
 {
     var mongoDbContext = scope.ServiceProvider.GetRequiredService<MongoDBContext>();
