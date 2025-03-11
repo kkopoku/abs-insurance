@@ -7,6 +7,11 @@ using Microsoft.AspNetCore.Mvc.Versioning;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using FluentValidation;
+using FluentValidation.AspNetCore;
+using Hubtel.Insurance.API.Validators;
+using Hubtel.Insurance.API.Middlewares;
+
 
 var builder = WebApplication.CreateBuilder(args);
 Env.Load();
@@ -41,7 +46,13 @@ builder.Services.AddApiVersioning(options =>
 
 // Add services
 builder.Services.AddOpenApi();
-builder.Services.AddControllers();
+builder.Services.AddControllers().ConfigureApiBehaviorOptions(options =>
+    {
+        // Disabling default model validation behavior
+        options.SuppressModelStateInvalidFilter = true;
+    });
+;
+
 builder.Services.Configure<MongoDBSettings>(builder.Configuration.GetSection("MongoDB"));
 builder.Services.AddSingleton<MongoDBContext>();
 builder.Services.AddScoped<DatabaseSeeder>();
@@ -50,6 +61,17 @@ builder.Services.AddScoped<IPolicyComponentRepository, PolicyComponentRepository
 builder.Services.AddScoped<ISubscriberRepository, SubscriberRepository>();
 builder.Services.AddScoped<IPolicyService, PolicyService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+
+
+// Register FluentValidation services
+builder.Services.AddFluentValidationAutoValidation(options => options.DisableDataAnnotationsValidation = true)
+                .AddFluentValidationClientsideAdapters();
+
+
+// Register all validators in the assembly
+builder.Services.AddValidatorsFromAssemblyContaining<RegisterSubscriberValidator>();
+
+
 
 // Register JWT authentication
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -77,6 +99,9 @@ builder.Logging.AddDebug();
 builder.Logging.AddEventSourceLogger();
 
 var app = builder.Build();
+
+// Register the custom middleware
+app.UseMiddleware<InvalidJsonMiddleware>();
 
 // Handle database seeding
 if (args.Length > 0 && args[0].ToLower() == "seed")
