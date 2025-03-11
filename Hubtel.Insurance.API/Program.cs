@@ -104,6 +104,20 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 }
 
+
+// Handle 401 unauthorized requests by returning custom error message
+app.Use(async (context, next) =>
+{
+    Console.WriteLine(" Middleware is called");
+    await next();
+
+    if (context.Response.StatusCode == StatusCodes.Status401Unauthorized)
+    {
+        context.Response.ContentType = "application/json";
+        await context.Response.WriteAsync("{\"code\":\"401\",\"message\":\"Unauthorized access\"}");
+    }
+});
+
 app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
