@@ -6,6 +6,7 @@ using Hubtel.Insurance.API.Services;
 using Hubtel.Insurance.API.DTOs;
 using Microsoft.AspNetCore.Authorization;
 
+[Authorize]
 [ApiController]
 [Route("api/v{version:apiVersion}/[controller]")]
 [ApiVersion("1.0")]
@@ -19,7 +20,6 @@ public class PolicyController(
     private readonly ILogger<PolicyController> _logger = logger;
 
 
-    [Authorize]
     [HttpGet]
     public async Task<IActionResult> GetAllPolicies(
         [FromQuery] int pageNumber = 1,
@@ -59,7 +59,12 @@ public class PolicyController(
 
         if (!ModelState.IsValid){
             _logger.LogInformation($"{tag} Invalid request body");
-            return StatusCode(400, new ApiResponse<string>("400","Invalid request body"));
+
+            string errors = string.Join(", ", ModelState.Values
+            .Select(v => v.Errors[0].ErrorMessage));
+
+            var badRequest = new ApiResponse<string>("400", errors);
+            return StatusCode(400, badRequest);
         }
 
         var response = await _policyService.CalculatePremium(requestQuoteDTO);
@@ -77,9 +82,14 @@ public class PolicyController(
         _logger.LogInformation($"{tag} Request recieved: {JsonConvert.SerializeObject(createPolicyDTO, Formatting.Indented)}");
 
 
-         if (!ModelState.IsValid){
+        if (!ModelState.IsValid){
             _logger.LogInformation($"{tag} Invalid request body");
-            return StatusCode(400, new ApiResponse<string>("400","Invalid request body"));
+
+            string errors = string.Join(", ", ModelState.Values
+            .Select(v => v.Errors[0].ErrorMessage));
+
+            var badRequest = new ApiResponse<string>("400", errors);
+            return StatusCode(400, badRequest);
         }
 
         var response = await _policyService.CreatePolicyAsync(createPolicyDTO);
@@ -95,6 +105,16 @@ public class PolicyController(
     {
         string tag = "[PolicyController][UpdatePolicy]";
         _logger.LogInformation($"{tag} Updating policy with ID: {updateDto.PolicyId}. Request: {JsonConvert.SerializeObject(updateDto, Formatting.Indented)}");
+
+        if (!ModelState.IsValid){
+            _logger.LogInformation($"{tag} Invalid request body");
+
+            string errors = string.Join(", ", ModelState.Values
+            .Select(v => v.Errors[0].ErrorMessage));
+
+            var badRequest = new ApiResponse<string>("400", errors);
+            return StatusCode(400, badRequest);
+        }
 
         var response = await _policyService.UpdatePolicyAsync(updateDto);
         var code = int.Parse(response.Code);

@@ -3,8 +3,8 @@ namespace Hubtel.Insurance.API.Repositories;
 using Hubtel.Insurance.API.Configurations;
 using Hubtel.Insurance.API.DTOs;
 using Hubtel.Insurance.API.Models;
-using Microsoft.AspNetCore.Mvc.RazorPages;
 using MongoDB.Driver;
+using Newtonsoft.Json;
 
 public class PolicyRepository
 (
@@ -63,8 +63,12 @@ public class PolicyRepository
 
     public async Task<Policy?> GetByIdAsync(int id)
     {
+        const string tag = "[PolicyRepository][GetByIdAsync]";
+        _logger.LogInformation($"${tag} I came hereeee");
         var policy = await _policies.Find(p => p.PolicyId == id).FirstOrDefaultAsync();
-        if (policy != null)
+        _logger.LogInformation($"${tag} I came meeeee");
+        _logger.LogInformation($"{tag} This is the policy: {JsonConvert.SerializeObject(policy, Formatting.Indented)}");
+        if (policy != null && policy.Components != null)
         {
             policy.Components = await _policyComponents.Find(c => c.PolicyId == policy.Id).ToListAsync();
         }
