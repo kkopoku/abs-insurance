@@ -17,6 +17,7 @@ public class MongoDBContext {
 
     public IMongoCollection<Policy> Policies => _database.GetCollection<Policy>("Policies");
     public IMongoCollection<PolicyComponent> PolicyComponents => _database.GetCollection<PolicyComponent>("PolicyComponents");
+    public IMongoCollection<Subscriber> Subscribers => _database.GetCollection<Subscriber>("Subscribers");
 
 
     public bool TestConnection () {
