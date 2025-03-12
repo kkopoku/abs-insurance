@@ -12,7 +12,6 @@ using FluentAssertions;
 using System.Text.Json;
 using Hubtel.Insurance.API.Validators;
 using FluentValidation.TestHelper;
-using Hubtel.Insurance.Tests.Utilities;
 
 public class PolicyServiceBasicTests
 {
