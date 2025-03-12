@@ -17,7 +17,7 @@ public class Policy {
     public required int PolicyId { get; set; }
 
 
-    [BsonIgnore] // ignore, mongo doesnt save this field
+    [BsonIgnore] // ignore, mongo doesn't save this field
     public List<PolicyComponent> Components { get; set; } = [];
     
 }
