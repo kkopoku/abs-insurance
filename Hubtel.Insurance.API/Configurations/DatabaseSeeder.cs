@@ -32,6 +32,7 @@ public class DatabaseSeeder
         var policiesData = new List<SeedPolicyDto>
         {
             new() {
+                PolicyId = 1,
                 PolicyName = "Low Claim Policy",
                 Components =
                 {
