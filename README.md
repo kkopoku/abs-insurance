@@ -26,6 +26,11 @@ The following features have been implemented:
 
 ### Tests
 - Unit tests for the Policy API and business logic have been implemented using xUnit and Moq.
+- Tests are located under the `Hubtel.Insurance.Test` project and can be run using:
+  ```sh
+  cd Hubtel.Insurance.Test
+  dotnet test
+  ```
 
 ## Project Structure
 ### Insurance API
@@ -46,6 +51,8 @@ src/InsuranceService
 ├── Controllers           // API controllers for handling HTTP requests
 ├── Constants             // Constants for fetching non-changing values
 ├── Models                // Entity models (Policy, PolicyComponent)
+├── Middlewares           // Middleware logic implementations
+├── Validators            // Validators for validating API requests
 ├── Enums                 // Enumeration types
 ├── Services              // Business logic for processing API requests
 ├── DTOs                  // Data Transfer Objects for structured input/output
@@ -76,9 +83,9 @@ A test project that contains unit tests for the API and business logic.
 1. User sends a request to list all policies.
 2. The service returns a list of available policies.
 
-### Delete a Policies
+### Delete a Policy
 1. User sends a request to delete a policy.
-2. The service a successful response that the policy is deleted, along with its corresponding components.
+2. The service returns a successful response that the policy is deleted, along with its corresponding components.
 
 ## Project Setup
 ### Clone the repository
@@ -106,10 +113,17 @@ dotnet build
 dotnet run
 ```
 
-### Run the tests
+### Seed the Database
+To seed the database initially with some policies and a subscriber, run:
 ```sh
-cd ../InsuranceService.Tests
-dotnet test
+dotnet run seed
+```
+
+### Run the tests
+To run the tests under the `Hubtel.Insurance.Test` project:
+```sh
+cd ../Hubtel.Insurance.Test
+ dotnet test
 ```
 
 ## Access the API
@@ -117,4 +131,3 @@ The API will be running on `http://localhost:5258` by default or the port you ha
 
 ## API Documentation
 The API documentation can be found [here](https://documenter.getpostman.com/view/23488284/2sAYdoGTev).
-
