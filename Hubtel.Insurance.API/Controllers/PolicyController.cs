@@ -26,7 +26,7 @@ public class PolicyController(
         [FromQuery] int pageSize = 10
     ){
         var tag = "[PolicyController][GetAllPolicies]";
-        _logger.LogInformation($"{tag} Request recieved");
+        _logger.LogInformation($"{tag} Request received");
         var response = await _policyService.GetAllPolicies(pageNumber, pageSize);
         var code = int.Parse(response.Code);
 
