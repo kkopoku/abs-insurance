@@ -23,6 +23,7 @@ The following features have been implemented:
 
 ### Authentication
 - JWT authentication is used to secure endpoints and ensure only authorized users can access policy data.
+- Subscribers must be registered and logged in to obtain a JWT token to access authenticated routes.
 
 ### Tests
 - Unit tests for the Policy API and business logic have been implemented using xUnit and Moq.
@@ -44,13 +45,14 @@ A web service built using ASP.NET Core that exposes endpoints for managing polic
 - List all policies.
 - Delete a policy.
 - Authenticate users with JWT.
+- A test route (`/`) to check if the server is running.
 
 ### Directory Overview
 ```
 src/InsuranceService
 ├── Controllers           // API controllers for handling HTTP requests
 ├── Constants             // Constants for fetching non-changing values
-├── Models                // Entity models (Policy, PolicyComponent)
+├── Models                // Entity models (Policy, PolicyComponent, Subscriber)
 ├── Middlewares           // Middleware logic implementations
 ├── Validators            // Validators for validating API requests
 ├── Enums                 // Enumeration types
@@ -87,6 +89,12 @@ A test project that contains unit tests for the API and business logic.
 1. User sends a request to delete a policy.
 2. The service returns a successful response that the policy is deleted, along with its corresponding components.
 
+### Subscriber Workflow
+1. A new subscriber registers with their details.
+2. Upon successful registration, they can log in with their credentials.
+3. Logging in returns a JWT token, which must be included in API requests to access protected routes.
+4. The subscriber can then perform actions like adding or updating policies.
+
 ## Project Setup
 ### Clone the repository
 ```sh
@@ -118,6 +126,9 @@ To seed the database initially with some policies and a subscriber, run:
 ```sh
 dotnet run seed
 ```
+This will create a default user with the following credentials:
+- **Email**: `user@example.com`
+- **Password**: `kwamepassword`
 
 ### Run the tests
 To run the tests under the `Hubtel.Insurance.Test` project:
