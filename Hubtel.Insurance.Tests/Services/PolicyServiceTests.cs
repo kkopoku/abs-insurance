@@ -10,6 +10,9 @@ using Hubtel.Insurance.API.DTOs;
 using Hubtel.Insurance.API.Models;
 using FluentAssertions;
 using System.Text.Json;
+using Hubtel.Insurance.API.Validators;
+using FluentValidation.TestHelper;
+using Hubtel.Insurance.Tests.Utilities;
 
 public class PolicyServiceBasicTests
 {
@@ -17,6 +20,8 @@ public class PolicyServiceBasicTests
     private readonly Mock<IPolicyComponentRepository> _mockPolicyComponentRepository;
     private readonly Mock<ILogger<PolicyService>> _mockLogger;
     private readonly PolicyService _policyService;
+    private readonly UpdatePolicyValidator _updatePolicyValidator;
+
 
 
     public PolicyServiceBasicTests()
@@ -25,6 +30,7 @@ public class PolicyServiceBasicTests
         _mockPolicyRepository = new Mock<IPolicyRepository>();
         _mockPolicyComponentRepository = new Mock<IPolicyComponentRepository>();
         _mockLogger = new Mock<ILogger<PolicyService>>();
+        _updatePolicyValidator = new UpdatePolicyValidator();
 
         // Act
         _policyService = new PolicyService(_mockPolicyRepository.Object, _mockPolicyComponentRepository.Object, _mockLogger.Object);
@@ -71,4 +77,86 @@ public class PolicyServiceBasicTests
         var actualPremium = (result.Data).Premium;
         actualPremium.Should().Be(expectedPremium);
     }
+
+
+    [Fact]
+    public void ValidUpdatePolicyDTO_ShouldPassValidation()
+    {
+        var model = new UpdatePolicyDTO
+        {
+            PolicyId = "123456",
+            PolicyName = "Updated Policy",
+            Components = new List<UpdatePolicyComponentDTO>
+            {
+                new() { Sequence = 1, FlatValue = 100 }
+            }
+        };
+
+        var result = _updatePolicyValidator.TestValidate(model);
+        result.ShouldNotHaveValidationErrorFor(x => x.PolicyId);
+        result.ShouldNotHaveAnyValidationErrors();
+    }
+
+
+
+    [Fact]
+    public void MissingPolicyId_ShouldFailValidation()
+    {
+        var model = (UpdatePolicyDTO)Activator.CreateInstance(typeof(UpdatePolicyDTO), nonPublic: true)!; // Dynamically creates an instance of UpdatePolicyDTO, bypassing required properties or private constructors.
+        model.PolicyName = "Updated Policy";  // Only set PolicyName
+
+        var result = _updatePolicyValidator.TestValidate(model);
+        result.ShouldHaveValidationErrorFor(x => x.PolicyId);
+    }
+
+
+    [Fact]
+    public void EmptyComponents_ShouldPassValidation()
+    {
+        var model = (UpdatePolicyDTO)Activator.CreateInstance(typeof(UpdatePolicyDTO), nonPublic: true)!;
+        model.PolicyId = "123456";
+        model.PolicyName = "Updated Policy";
+        model.Components = new List<UpdatePolicyComponentDTO>();
+
+        var result = _updatePolicyValidator.TestValidate(model);
+        result.ShouldNotHaveAnyValidationErrors();
+    }
+
+
+    [Fact]
+    public void SequenceOutOfRange_ShouldFailValidation()
+    {
+        var model = (UpdatePolicyDTO)Activator.CreateInstance(typeof(UpdatePolicyDTO), nonPublic: true)!;
+        model.PolicyId = "123456";
+        model.Components = new List<UpdatePolicyComponentDTO> { new() { Sequence = 5, FlatValue = 100 } };
+
+        var result = _updatePolicyValidator.TestValidate(model);
+        result.ShouldHaveValidationErrorFor("Components[0].Sequence");
+    }
+
+
+    [Fact]
+    public void BothFlatAndPercentageValues_ShouldFailValidation()
+    {
+        var model = (UpdatePolicyDTO)Activator.CreateInstance(typeof(UpdatePolicyDTO), nonPublic: true)!;
+        model.PolicyId = "123456";
+        model.Components = new List<UpdatePolicyComponentDTO> { new() { Sequence = 2, FlatValue = 100, PercentageValue = 10 } };
+
+        var result = _updatePolicyValidator.TestValidate(model);
+        result.ShouldHaveAnyValidationError();
+    }
+
+
+    [Fact]
+    public void NullComponents_ShouldPassValidation()
+    {
+        var model = (UpdatePolicyDTO)Activator.CreateInstance(typeof(UpdatePolicyDTO), nonPublic: true)!;
+        model.PolicyId = "123456";
+        model.Components = null;
+
+        var result = _updatePolicyValidator.TestValidate(model);
+        result.ShouldNotHaveAnyValidationErrors();
+    }
+
+
 }
