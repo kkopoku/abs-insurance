@@ -5,22 +5,22 @@ using System.ComponentModel.DataAnnotations;
 public class CreatePolicyDTO
 {
     [Required(ErrorMessage = "Policy Id is required")]
-    public required int PolicyId { get; set; }
+    public int PolicyId { get; set; }
 
     [Required(ErrorMessage = "Policy name is required")]
-    public required string Policy { get; set; }
+    public string Policy { get; set; }
 
     [Required(ErrorMessage = "Exactly 4 components are required")]
     [MinLength(4, ErrorMessage = "Exactly 4 components are required")]
     [MaxLength(4, ErrorMessage = "Exactly 4 components are required")]
-    public required List<PolicyComponentInputDTO> Components { get; set; }
+    public List<PolicyComponentInputDTO> Components { get; set; }
 }
 
 public class PolicyComponentInputDTO
 {
     [Required(ErrorMessage = "Sequence is required")]
     [Range(1, 4, ErrorMessage = "Sequence must be between 1 and 4")]
-    public required int Sequence { get; set; }
+    public int Sequence { get; set; }
 
     [Range(0, double.MaxValue, ErrorMessage = "Flat value cannot be negative")]
     public double? FlatValue { get; set; }
