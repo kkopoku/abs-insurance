@@ -1,7 +1,6 @@
 using Hubtel.Insurance.API.Repositories;
 using Hubtel.Insurance.API.Models;
 using Hubtel.Insurance.API.DTOs;
-using MongoDB.Bson;
 
 namespace Hubtel.Insurance.API.Configurations;
 
@@ -9,13 +8,16 @@ public class DatabaseSeeder
 {
     private readonly IPolicyRepository _policyRepository;
     private readonly IPolicyComponentRepository _policyComponentRepository;
+    private readonly ISubscriberRepository _subscriberRepository;
 
     public DatabaseSeeder(
         IPolicyRepository policyRepository,
-        IPolicyComponentRepository policyComponentRepository)
-    {
+        IPolicyComponentRepository policyComponentRepository,
+        ISubscriberRepository subscriberRepository
+    ){
         _policyRepository = policyRepository;
         _policyComponentRepository = policyComponentRepository;
+        _subscriberRepository = subscriberRepository;
     }
 
     public async Task SeedAsync()
@@ -59,7 +61,7 @@ public class DatabaseSeeder
                 {
                     new() { Sequence = 1, Name = "Premium Base", Operation = "add", FlatValue = 1000.00, Percentage = 0 },
                     new() { Sequence = 2, Name = "Extra Perils", Operation = "add", FlatValue = 500.00, Percentage = 0 },
-                    new() { Sequence = 3, Name = "Market Value Premium", Operation = "add", FlatValue = 350, Percentage = 15 },
+                    new() { Sequence = 3, Name = "Market Value Premium", Operation = "add", FlatValue = 0, Percentage = 45 },
                     new() { Sequence = 4, Name = "Promo Discount", Operation = "subtract", FlatValue = 120, Percentage = 0 }
                 }
             }
@@ -89,6 +91,15 @@ public class DatabaseSeeder
                 await _policyComponentRepository.CreateAsync(policyComponentRecord);
             }
         }
+
+        var subscriber = new Subscriber { 
+            Email = "test@example.com",
+            FirstName = "Kwame",
+            LastName = "Opoku",
+            Password = BCrypt.Net.BCrypt.HashPassword("kwamepassword")
+        };
+
+        await _subscriberRepository.AddSubscriberAsync(subscriber);
 
         Console.WriteLine("Database seeding completed successfully.");
     }
