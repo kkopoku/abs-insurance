@@ -101,11 +101,19 @@ public class AuthService(
             }
 
             var subscriber = await _subscriberRepository.GetSubscriberByEmailAsync(subscriberDTO.Email);
-            var passwordCheck = VerifyPassword(subscriberDTO.Password, subscriber.Password);
-            if (subscriber == null || !passwordCheck)
-            {
+
+            if (subscriber == null){
+                _logger.LogWarning($"{tag} Email not found: {subscriberDTO.Email}");
                 return new ApiResponse<string>("400", "Invalid email or password");
             }
+
+
+            var passwordCheck = VerifyPassword(subscriberDTO.Password, subscriber.Password);
+            if (!passwordCheck){
+                _logger.LogInformation($"{tag} Incorrect password");
+                return new ApiResponse<string>("400", "Invalid email or password");
+            }
+
 
             // Generate a token for authorization
             string token = GenerateToken(subscriber);
@@ -140,6 +148,8 @@ public class AuthService(
         );
 
         var jwtKey = _configuration["Jwt:Secret"] ?? throw new ArgumentNullException("Jwt:Secret");
+
+        // sign JWT token
         var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey));
         var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
 
@@ -153,7 +163,7 @@ public class AuthService(
             issuer: _configuration["Jwt:Issuer"],
             audience: _configuration["Jwt:Audience"],
             claims: claims,
-            expires: DateTime.UtcNow.AddHours(1), // Use UtcNow
+            expires: DateTime.UtcNow.AddHours(24), // Use UtcNow
             signingCredentials: credentials
         );
 

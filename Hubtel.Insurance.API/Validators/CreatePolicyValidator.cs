@@ -16,6 +16,23 @@ namespace Hubtel.Insurance.API.Validators
             RuleFor(x => x.Components)
                 .NotNull().WithMessage("Exactly 4 components are required")
                 .Must(c => c.Count == 4).WithMessage("Exactly 4 components are required");
+
+            RuleForEach(x => x.Components).ChildRules(components =>
+            {
+                components.RuleFor(c => c.PercentageValue)
+                    .GreaterThan(0)
+                    .When(c => c.PercentageValue.HasValue)
+                    .WithMessage("Percentage value must be between 0 and 100");
+
+                components.RuleFor(c => c.FlatValue)
+                    .GreaterThan(0)
+                    .When(c => c.FlatValue.HasValue)
+                    .WithMessage("Flat value must be greater than 0");
+
+                components.RuleFor(c => c)
+                    .Must(c => (c.PercentageValue ?? 0) == 0 || (c.FlatValue ?? 0) == 0)
+                    .WithMessage("A component cannot have both percentage and flat value set");
+            });
         }
     }
 }
