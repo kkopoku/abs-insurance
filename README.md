@@ -4,7 +4,7 @@
 The ABS InsuranceService is designed to manage insurance policies and their components. It allows users to create, update, and retrieve policy details while enforcing business rules such as percentage and flat value constraints. The service uses MongoDB for storage and .NET 8 for backend development.
 
 ## Tools
-- .NET 8
+- .NET 9
 - NoSQL (MongoDB)
 - Postman for API testing
 
