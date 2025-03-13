@@ -101,11 +101,19 @@ public class AuthService(
             }
 
             var subscriber = await _subscriberRepository.GetSubscriberByEmailAsync(subscriberDTO.Email);
-            var passwordCheck = VerifyPassword(subscriberDTO.Password, subscriber.Password);
-            if (subscriber == null || !passwordCheck)
-            {
+
+            if (subscriber == null){
+                _logger.LogWarning($"{tag} Email not found: {subscriberDTO.Email}");
                 return new ApiResponse<string>("400", "Invalid email or password");
             }
+
+
+            var passwordCheck = VerifyPassword(subscriberDTO.Password, subscriber.Password);
+            if (!passwordCheck){
+                _logger.LogInformation($"{tag} Incorrect password");
+                return new ApiResponse<string>("400", "Invalid email or password");
+            }
+
 
             // Generate a token for authorization
             string token = GenerateToken(subscriber);
