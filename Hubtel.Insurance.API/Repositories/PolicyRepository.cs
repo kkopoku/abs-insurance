@@ -64,9 +64,7 @@ public class PolicyRepository
     public async Task<Policy?> GetByIdAsync(int id)
     {
         const string tag = "[PolicyRepository][GetByIdAsync]";
-        _logger.LogInformation($"{tag} I came hereeee");
         var policy = await _policies.Find(p => p.PolicyId == id).FirstOrDefaultAsync();
-        _logger.LogInformation($"{tag} I came meeeee");
         _logger.LogInformation($"{tag} This is the policy: {JsonConvert.SerializeObject(policy, Formatting.Indented)}");
         if (policy != null && policy.Components != null)
         {
