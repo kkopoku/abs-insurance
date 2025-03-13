@@ -4,7 +4,7 @@ namespace Hubtel.Insurance.API.DTOs;
 
 public class UpdatePolicyDTO
 {
-    public required string PolicyId { get; set; }
+    public string PolicyId { get; set; }
     public string? PolicyName { get; set; }
     public List<UpdatePolicyComponentDTO>? Components { get; set; }
 

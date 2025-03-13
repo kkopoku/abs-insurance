@@ -62,11 +62,12 @@ public class PolicyServiceBasicTests
             }
         };
 
+        // mockPolicyRepo to return foundPolicy when id 123 is requested
         _mockPolicyRepository.Setup(repo => repo.GetByIdAsync(123)).ReturnsAsync(foundPolicy);
 
         // Act
         var result = await _policyService.CalculatePremium(requestQuoteDTO);
-        Console.WriteLine(result);
+
         // Assert
         result.Code.Should().Be("200");
         result.Message.Should().Be("Quote retrieved successfully");
