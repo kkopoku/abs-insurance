@@ -147,10 +147,15 @@ public class PolicyService(
             // Validate component sequences
             _logger.LogInformation($"{tag} Validating policy components...");
             var components = policyDTO.Components;
-            for (var i = 0; i < components.Count; i++)
+
+            var componentSorted = components.OrderBy(a => a.Sequence).ToList();
+
+            _logger.LogInformation($"{tag} Here: {JsonConvert.SerializeObject(componentSorted, Formatting.Indented)}");
+
+            for (var i = 0; i < componentSorted.Count; i++)
             {
                 var expectedCount = i + 1;
-                var current = components[i];
+                var current = componentSorted[i];
                 if (expectedCount != current.Sequence)
                 {
                     _logger.LogWarning($"{tag} Invalid component sequence detected at index {i}. Expected: {expectedCount}, Found: {current.Sequence}");
@@ -242,6 +247,24 @@ public class PolicyService(
         try
         {
             _logger.LogInformation($"{tag} Start processing request for Policy ID: {updateDto.PolicyId}");
+
+            // Validate request
+            var componentSorted = updateDto.Components.OrderBy(a => a.Sequence).ToList();
+
+            _logger.LogInformation($"{tag} Here: {JsonConvert.SerializeObject(componentSorted, Formatting.Indented)}");
+
+            for (var i = 0; i < componentSorted.Count; i++){
+                var expectedCount = i + 1;
+                var current = componentSorted[i];
+                if (expectedCount != current.Sequence){
+                    _logger.LogWarning($"{tag} Invalid component sequence detected at index {i}. Expected: {expectedCount}, Found: {current.Sequence}");
+                    if(expectedCount > current.Sequence){
+                        return new ApiResponse<Policy>("400", $"Duplicate sequence number detected for sequence: {current.Sequence}, please try again");
+                    }
+                    return new ApiResponse<Policy>("400", "Invalid policy components, please try again");
+                }
+            }
+
 
             // Find policy
             var foundPolicy = await _policyRepository.GetByIdAsync(int.Parse(updateDto.PolicyId));
