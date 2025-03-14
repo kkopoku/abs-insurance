@@ -35,7 +35,10 @@ public class PolicyComponentRepository(
         _logger.LogInformation($"{tag} Start updating policy component: {JsonConvert.SerializeObject(component, Formatting.Indented)}");
 
 
-        var filter = Builders<PolicyComponent>.Filter.Eq(c => c.PolicyId, component.PolicyId);
+        var filter =Builders<PolicyComponent>.Filter.And(
+            Builders<PolicyComponent>.Filter.Eq(c => c.PolicyId, component.PolicyId),
+            Builders<PolicyComponent>.Filter.Eq(c => c.Sequence, component.Sequence)
+        );
         var updateDef = new List<UpdateDefinition<PolicyComponent>>();
 
         if (component.FlatValue.HasValue){
@@ -68,24 +71,6 @@ public class PolicyComponentRepository(
 
         return result.ModifiedCount > 0;
     }
-
-
-    // public async Task<bool> DeletePolicyComponentByPolicyIdAsync(string policyId){
-    //     const string tag = "[PolicyComponentRepository][DeletePolicyComponentByPolicyIdAsync]";
-    //     _logger.LogInformation($"{tag} Start deleting policy component with Policy ID: {policyId}");
-
-    //     var filter = Builders<PolicyComponent>.Filter.Eq(c => c.PolicyId, policyId);
-    //     var result = await _policyComponents.DeleteOneAsync(filter);
-
-    //     if (result.DeletedCount > 0)
-    //     {
-    //         _logger.LogInformation($"{tag} Successfully deleted policy component with ID: {policyId}");
-    //         return true;
-    //     }
-
-    //     _logger.LogWarning($"{tag} No policy component found with ID: {policyId}");
-    //     return false;
-    // }
 
 
     public async Task<long> DeletePolicyComponentsByPolicyIdAsync(string policyId){

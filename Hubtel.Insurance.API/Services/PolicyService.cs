@@ -256,12 +256,9 @@ public class PolicyService(
             for (var i = 0; i < componentSorted.Count; i++){
                 var expectedCount = i + 1;
                 var current = componentSorted[i];
-                if (expectedCount != current.Sequence){
-                    _logger.LogWarning($"{tag} Invalid component sequence detected at index {i}. Expected: {expectedCount}, Found: {current.Sequence}");
-                    if(expectedCount > current.Sequence){
-                        return new ApiResponse<Policy>("400", $"Duplicate sequence number detected for sequence: {current.Sequence}, please try again");
-                    }
-                    return new ApiResponse<Policy>("400", "Invalid policy components, please try again");
+                var prev = (i>0) ? componentSorted[i-1] : null;
+                if((i>0) && (prev.Sequence == current.Sequence)){
+                    return new ApiResponse<Policy>("400", $"Duplicate sequence number detected for sequence: {current.Sequence}, please try again");
                 }
             }
 
@@ -295,10 +292,7 @@ public class PolicyService(
                     _logger.LogInformation($"{tag} Updating component Sequence: {component.Sequence}");
                     component.PolicyId = foundPolicy.Id;
                     var updated = await _policyComponentRepository.UpdatePolicyComponentAsync(component);
-                    if (updated)
-                    {
-                        componentsUpdated = true;
-                    }
+                    if (updated) componentsUpdated = true;
                 }
             }
 
